@@ -57,4 +57,4 @@ Open the local URL - Upload your factory CCTV frame - Tune parameters in real-ti
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
 
 ---
-**Ready for Day 2?** Next is MediaPipe worker detection.
+**Day 2** Next is MediaPipe worker detection.
