@@ -4,6 +4,7 @@
 
 [![Gradio](https://img.shields.io/badge/Gradio-Demo-brightgreen)](https://github.com/KanishqGandharv219/FactorySegMaster)
 [![OpenCV](https://img.shields.io/badge/OpenCV-v4.9-blue)](https://opencv.org)
+[![MediaPipe](https://img.shields.io/badge/MediaPipe-v0.10-green)](https://mediapipe.dev)
 [![YOLOv8](https://img.shields.io/badge/YOLOv8-nano-orange)](https://ultralytics.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -20,7 +21,7 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
 | Day | Status | Topic | Tools |
 |-----|--------|-------|-------|
 | 1 | Done | **OpenCV Contours** (Machine Isolation) | Adaptive Thresh, Morphology |
-| 2 | Pending | **MediaPipe** (Worker Hands/Poses) | Safety Zone Monitoring |
+| 2 | Done | **MediaPipe** (Worker Hands/Poses) | Safety Zone Monitoring |
 | 3 | Pending | **YOLOv8** (Factory Object Detection) | Custom Class Training |
 | 4 | Pending | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
 | 5 | Pending | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
@@ -45,6 +46,27 @@ Open the local URL - Upload your factory CCTV frame - Tune parameters in real-ti
 - **Convexity Filter:** Isolates boxy machine shapes and filters organic noise.
 - **Live Metrics:** Real-time object count and floor area coverage.
 
+## Day 2: MediaPipe Worker Detection
+Using **MediaPipe Tasks API PoseLandmarker** for multi-person pose estimation and **HandLandmarker** for hand tracking. Includes a safety zone framework for machine-area violation detection.
+
+### Quick Start
+```bash
+cd day2_mediapipe
+pip install -r requirements.txt
+python demo.py
+```
+Models auto-download on first run (~13MB total).
+
+### Key Features (Day 2)
+- **Multi-person pose detection** via PoseLandmarker Tasks API (best-effort, num_poses=5).
+- **Hand tracking** with HandLandmarker for assembly QC monitoring.
+- **Slider-based safety zones** with real-time violation alerts.
+- **Video processing** mode for frame-by-frame analysis of factory footage.
+- **Per-worker colored skeletons** with joint visibility tracking.
+
+### Limitations
+- MediaPipe PoseLandmarker multi-person is officially "out of scope" for the model. Works well for 2-3 workers; Day 3 YOLOv8-Pose gives proper multi-person support.
+
 ## Endgame Stack
 - **Real-time:** YOLOv8 + SAM2 ensemble
 - **Tracking:** ByteTrack (persistent IDs)
@@ -57,4 +79,4 @@ Open the local URL - Upload your factory CCTV frame - Tune parameters in real-ti
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
 
 ---
-**Day 2** Next is MediaPipe worker detection.
+**Day 3** next: YOLOv8 factory object detection with proper multi-person support.

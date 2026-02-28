@@ -9,7 +9,9 @@ ENV/
 env.bak/
 venv.bak/
 .temp/
+.gradio/
 temp_factory.jpg
 debug_raw_mask.jpg
 segmented_mask.jpg
 segmented_annotated.jpg
+day2_mediapipe/models/
