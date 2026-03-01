@@ -15,3 +15,4 @@ debug_raw_mask.jpg
 segmented_mask.jpg
 segmented_annotated.jpg
 day2_mediapipe/models/
+day3_yolov8/*.pt

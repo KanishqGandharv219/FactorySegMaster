@@ -22,7 +22,7 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
 |-----|--------|-------|-------|
 | 1 | Done | **OpenCV Contours** (Machine Isolation) | Adaptive Thresh, Morphology |
 | 2 | Done | **MediaPipe** (Worker Hands/Poses) | Safety Zone Monitoring |
-| 3 | Pending | **YOLOv8** (Factory Object Detection) | Custom Class Training |
+| 3 | Done | **YOLOv8** (Factory Object Detection) | Custom Class Training |
 | 4 | Pending | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
 | 5 | Pending | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
 | 6 | Pending | **Custom Dataset Training** (Finetuning) | Roboflow / CVAT |
@@ -67,6 +67,24 @@ Models auto-download on first run (~13MB total).
 ### Limitations
 - MediaPipe PoseLandmarker multi-person is officially "out of scope" for the model. Works well for 2-3 workers; Day 3 YOLOv8-Pose gives proper multi-person support.
 
+## Day 3: YOLOv8 Factory Object Detection
+Using **Ultralytics YOLOv8n** (nano) for robust multi-person and object detection. Solves the MediaPipe occlusion issues from Day 2. Detects workers, vehicles, and other COCO objects with proper bounding boxes.
+
+### Quick Start
+```bash
+cd day3_yolov8
+pip install -r requirements.txt
+python demo.py
+```
+YOLOv8n (~6MB) auto-downloads on first run.
+
+### Key Features (Day 3)
+- **Proper multi-person detection** -- handles 20+ overlapping workers without landmark jumping.
+- **Configurable class filtering** -- toggle Person vs Vehicle detection via checkboxes.
+- **Confidence and NMS IoU sliders** for tuning precision vs recall.
+- **Bounding-box safety zones** -- triggers alerts when a person's bottom-center enters a zone.
+- **Full video processing** with per-frame annotation and summary stats.
+
 ## Endgame Stack
 - **Real-time:** YOLOv8 + SAM2 ensemble
 - **Tracking:** ByteTrack (persistent IDs)
@@ -79,4 +97,4 @@ Models auto-download on first run (~13MB total).
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
 
 ---
-**Day 3** next: YOLOv8 factory object detection with proper multi-person support.
+**Day 4** next: SAM2 zero-shot segmentation for tools, belts, and specific parts.

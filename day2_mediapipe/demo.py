@@ -5,6 +5,28 @@ Worker pose detection + safety zone monitoring.
 Supports both image upload and video (frame-by-frame) processing.
 """
 
+# --- Monkey-patch for gradio_client JSON schema bug ---
+import gradio_client.utils as _gc_utils
+
+_original_get_type = _gc_utils.get_type
+
+def _patched_get_type(schema):
+    if isinstance(schema, bool):
+        return "bool"
+    return _original_get_type(schema)
+
+_gc_utils.get_type = _patched_get_type
+
+_original_json_schema = _gc_utils._json_schema_to_python_type
+
+def _patched_json_schema(schema, defs=None):
+    if isinstance(schema, bool):
+        return "Any"
+    return _original_json_schema(schema, defs)
+
+_gc_utils._json_schema_to_python_type = _patched_json_schema
+# --- End monkey-patch ---
+
 import cv2
 import gradio as gr
 import numpy as np
