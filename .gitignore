@@ -16,3 +16,4 @@ segmented_mask.jpg
 segmented_annotated.jpg
 day2_mediapipe/models/
 day3_yolov8/*.pt
+day4_sam2/*.pt

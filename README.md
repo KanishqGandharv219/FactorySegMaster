@@ -23,7 +23,7 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
 | 1 | Done | **OpenCV Contours** (Machine Isolation) | Adaptive Thresh, Morphology |
 | 2 | Done | **MediaPipe** (Worker Hands/Poses) | Safety Zone Monitoring |
 | 3 | Done | **YOLOv8** (Factory Object Detection) | Custom Class Training |
-| 4 | Pending | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
+| 4 | Done | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
 | 5 | Pending | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
 | 6 | Pending | **Custom Dataset Training** (Finetuning) | Roboflow / CVAT |
 | 7 | Pending | **Ensemble + FactoryTwin Demo** | Full Pipeline Integration |
@@ -85,6 +85,23 @@ YOLOv8n (~6MB) auto-downloads on first run.
 - **Bounding-box safety zones** -- triggers alerts when a person's bottom-center enters a zone.
 - **Full video processing** with per-frame annotation and summary stats.
 
+## Day 4: SAM2 Zero-Shot Segmentation
+Moving from bounding boxes to **Pixel-Perfect Zero-Shot Masks** using Meta's SAM2 (Segment Anything Model 2). This allows us to instantly outline any factory tool, machine part, or defect with 100% precision without training a custom model first.
+
+### Quick Start
+```bash
+cd day4_sam2
+pip install -r requirements.txt
+python demo.py
+```
+`sam2.1_t.pt` (SAM2.1 Tiny) auto-downloads on first run (~8MB).
+
+### Key Features (Day 4)
+- **Zero-Shot Segmentation:** Click any unlabelled object in the frame to instantly generate a perfect mask.
+- **Interactive UI:** Refactored Gradio layout to cleanly capture coordinate clicks in the browser.
+- **Isolation Mode:** Background subtraction capability to highlight anomalous machine parts or defects.
+- **Ultralytics Backend:** Seamless integration of SAM2 inference through the Ultralytics API.
+
 ## Endgame Stack
 - **Real-time:** YOLOv8 + SAM2 ensemble
 - **Tracking:** ByteTrack (persistent IDs)
@@ -97,4 +114,4 @@ YOLOv8n (~6MB) auto-downloads on first run.
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
 
 ---
-**Day 4** next: SAM2 zero-shot segmentation for tools, belts, and specific parts.
+**Day 5** next: ByteTrack for persistent ID tracking of workers across frames.
