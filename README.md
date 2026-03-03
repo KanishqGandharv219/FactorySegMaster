@@ -24,7 +24,7 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
 | 2 | Done | **MediaPipe** (Worker Hands/Poses) | Safety Zone Monitoring |
 | 3 | Done | **YOLOv8** (Factory Object Detection) | Custom Class Training |
 | 4 | Done | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
-| 5 | Pending | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
+| 5 | Done | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
 | 6 | Pending | **Custom Dataset Training** (Finetuning) | Roboflow / CVAT |
 | 7 | Pending | **Ensemble + FactoryTwin Demo** | Full Pipeline Integration |
 
@@ -102,6 +102,23 @@ python demo.py
 - **Isolation Mode:** Background subtraction capability to highlight anomalous machine parts or defects.
 - **Ultralytics Backend:** Seamless integration of SAM2 inference through the Ultralytics API.
 
+## Day 5: ByteTrack Persistent Tracking
+Moving from frame-by-frame detection (Day 3 YOLOv8) to **Persistent Object Tracking** using ByteTrack. This assigns a persistent integer ID to every object across video frames, enabling Dwell Time monitoring.
+
+### Quick Start
+```bash
+cd day5_tracking
+pip install -r requirements.txt
+python demo.py
+```
+`yolov8n.pt` auto-downloads on first run (~6MB).
+
+### Key Features (Day 5)
+- **Persistent ID Tracking:** Tracks individual workers and vehicles across frames, keeping their ID constant.
+- **Dwell Time Monitor:** Upgraded Safety Zones that don't just detect presence, but alert if an ID remains in a zone for longer than `max_dwell_seconds`.
+- **Ultralytics Backend:** Seamless integration of ByteTrack inference through the Ultralytics tracking API.
+- **Video Processing Canvas:** Overlays dynamic tracking IDs and real-time violation logs on tracking videos.
+
 ## Endgame Stack
 - **Real-time:** YOLOv8 + SAM2 ensemble
 - **Tracking:** ByteTrack (persistent IDs)
@@ -114,4 +131,4 @@ python demo.py
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
 
 ---
-**Day 5** next: ByteTrack for persistent ID tracking of workers across frames.
+**Day 6** next: Custom Dataset Training (Finetuning YOLOv8 to detect PPE like Hardhats and Vests).
