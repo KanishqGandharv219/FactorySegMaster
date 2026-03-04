@@ -16,3 +16,11 @@ segmented_mask.jpg
 segmented_annotated.jpg
 day2_mediapipe/models/
 **/*.pt
+**/runs/
+**/train/
+**/valid/
+**/test/
+*.zip
+*.cache
+**/*.cache
+roboflow.zip

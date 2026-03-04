@@ -25,7 +25,7 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
 | 3 | Done | **YOLOv8** (Factory Object Detection) | Custom Class Training |
 | 4 | Done | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
 | 5 | Done | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
-| 6 | Pending | **Custom Dataset Training** (Finetuning) | Roboflow / CVAT |
+| 6 | Done | **Custom Dataset Training** (PPE Detection) | Roboflow + YOLOv8 Finetuning |
 | 7 | Pending | **Ensemble + FactoryTwin Demo** | Full Pipeline Integration |
 
 ## Day 1: OpenCV Segmentation
@@ -119,9 +119,29 @@ python demo.py
 - **Ultralytics Backend:** Seamless integration of ByteTrack inference through the Ultralytics tracking API.
 - **Video Processing Canvas:** Overlays dynamic tracking IDs and real-time violation logs on tracking videos.
 
+## Day 6: Custom PPE Detection (YOLOv8 Finetuning)
+Fine-tuning **YOLOv8n** on a real-world PPE dataset from Roboflow Universe (Construction Site Safety, 2600+ images, 10 classes). The model learns to detect Hardhats, Safety Vests, Masks, and their absence on factory workers.
+
+### Quick Start
+```bash
+cd day6_ppe_training
+pip install -r requirements.txt
+# Download dataset from Roboflow Universe (Construction Site Safety, YOLOv8 format)
+# Extract into day6_ppe_training/ so train/, valid/, test/ folders exist
+python train_ppe.py
+python demo.py
+```
+
+### Key Features (Day 6)
+- **10-Class PPE Detection:** Hardhat, Mask, NO-Hardhat, NO-Mask, NO-Safety Vest, Person, Safety Cone, Safety Vest, machinery, vehicle.
+- **Transfer Learning:** Fine-tunes from COCO-pretrained YOLOv8n weights for fast convergence on small datasets.
+- **Compliance Reporting:** Color-coded bounding boxes (Green = PPE present, Red = PPE missing) with a per-frame compliance summary.
+- **Gradio Demo:** Upload any factory image to instantly check PPE compliance.
+
 ## Endgame Stack
 - **Real-time:** YOLOv8 + SAM2 ensemble
 - **Tracking:** ByteTrack (persistent IDs)
+- **PPE:** Custom-trained YOLOv8 for safety gear
 - **Deploy:** FastAPI + WebRTC stream
 - **Edge:** ONNX (Raspberry Pi factory cams)
 
@@ -131,4 +151,4 @@ python demo.py
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
 
 ---
-**Day 6** next: Custom Dataset Training (Finetuning YOLOv8 to detect PPE like Hardhats and Vests).
+**Day 7** next: Ensemble + FactoryTwin Demo (Full Pipeline Integration).
