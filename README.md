@@ -26,7 +26,7 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
 | 4 | Done | **SAM2** (Zero-shot Segmentation) | Tools, Belts, Specific Parts |
 | 5 | Done | **Tracking** (ByteTrack IDs) | Persistent ID Tracking |
 | 6 | Done | **Custom Dataset Training** (PPE Detection) | Roboflow + YOLOv8 Finetuning |
-| 7 | Pending | **Ensemble + FactoryTwin Demo** | Full Pipeline Integration |
+| 7 | Done | **Ensemble + FactoryTwin Demo** | Full Pipeline Integration |
 
 ## Day 1: OpenCV Segmentation
 We use **Adaptive Gaussian Thresholding** and **Morphological Gradient** analysis to separate light-gray machines from light-gray factory floors. 
@@ -138,6 +138,28 @@ python demo.py
 - **Compliance Reporting:** Color-coded bounding boxes (Green = PPE present, Red = PPE missing) with a per-frame compliance summary.
 - **Gradio Demo:** Upload any factory image to instantly check PPE compliance.
 
+## Day 7: Ensemble + FactoryTwin Demo (The Master System)
+Bringing it all together: **YOLOv8 Object Detection & Tracking (Day 5)** + **Custom PPE Detection (Day 6)** + **SAM2 Zero-Shot Segmentation (Day 4)** running in a unified FactoryTwin engine.
+
+### Quick Start
+```bash
+cd day7_factorytwin
+pip install -r requirements.txt
+python demo.py
+```
+
+### Key Features (Day 7)
+- **Master Orchestrator (`factory_twin.py`):** Runs ByteTrack for worker IDs and bounding boxes, passes those bounding boxes to the Custom PPE Detector to verify Hardhats/Vests, and optionally passes them to SAM2 for zero-shot pixel masking.
+- **Factory Analytics Dashboard:** Real-time computation of a `Factory Risk Score` based on worker density, vehicle proximity, and active PPE violations.
+- **Scrolling Event Log:** Live updates detailing specific safety infractions (e.g., `Worker ID: 15 Missing Safety Vest`).
+- **Toggleable Engines:** The Gradio demo allows users to selectively enable/disable PPE detection and SAM2 masks to manage GPU/CPU load on edge devices.
+
+### Demo Output
+Check out the fully integrated pipeline in action:
+[FactoryTwin Output Video](factory_twin_output_compressed.mp4)
+
+---
+
 ## Endgame Stack
 - **Real-time:** YOLOv8 + SAM2 ensemble
 - **Tracking:** ByteTrack (persistent IDs)
@@ -149,6 +171,3 @@ python demo.py
 1. **Factory AI bottleneck:** Nobody segments factories well at scale for SMEs.
 2. **Viral demos:** Factory photo - precise masks = instant credibility.
 3. **Foundation for FactoryTwin:** Precise spatial mapping is the prerequisite for AI motion planning.
-
----
-**Day 7** next: Ensemble + FactoryTwin Demo (Full Pipeline Integration).

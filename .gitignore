@@ -24,3 +24,5 @@ day2_mediapipe/models/
 *.cache
 **/*.cache
 roboflow.zip
+*.mp4
+!factory_twin_output_compressed.mp4

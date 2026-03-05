@@ -1,0 +1,6 @@
+ultralytics>=8.2.0
+gradio>=4.44.1
+opencv-python
+numpy
+pillow
+pydantic==2.8.2
