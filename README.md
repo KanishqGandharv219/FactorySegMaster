@@ -157,6 +157,25 @@ python demo.py
 ### Demo Output
 Check out the fully integrated pipeline in action:
 [FactoryTwin Output Video](factory_twin_output_compressed.mp4)
+
+
+## Day 8: Product Dashboard (FactoryTwin Control Center)
+Day 8 wraps the ensemble into a FastAPI dashboard that streams live inference, real-time risk analytics, and one-click video processing for factory supervisors who need more than a notebook demo.
+
+### Quick Start
+```bash
+cd day8_product_dashboard
+pip install -r requirements.txt
+python main.py
+```
+Open `http://127.0.0.1:8000` to use the glassy dashboard: upload an image for instant PPE/segmentation analysis or enqueue a video for background rendering with WebSocket progress.
+
+### Key Features (Day 8)
+- **FactoryTwin API** (`main.py`): exposes `/api/process-image` and `/api/process-video`, keeps analytics logs, and hosts the dynamic UI assets under `static/`.
+- **Premium UI** (`static/style.css`, `static/index.html`, `static/script.js`): glassmorphism panels, particle field, and image/video tabs with PPE/SAM2 toggles.
+- **Video Task Orchestration**: background video worker writes safe temp files, streams `/ws/progress/{task_id}`, and reuses the Ensemble (ByteTrack + PPE + SAM2) for each frame.
+- **Analytics & Logs**: `analytics.py` tracks workers, vehicles, violations, and risk scores for both the API responses and the live event log sidebar.
+
 
 ---
 
