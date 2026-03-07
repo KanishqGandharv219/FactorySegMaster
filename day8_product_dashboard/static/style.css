@@ -1,4 +1,4 @@
-﻿*,
+*,
 *::before,
 *::after {
   margin: 0;
@@ -321,6 +321,57 @@ h1 {
   line-height: 1.38;
 }
 
+.drop-zone.drag-over {
+  transform: translateY(-2px);
+  border-color: rgba(19, 152, 165, 0.64);
+  box-shadow: 0 0 0 2px rgba(19, 152, 165, 0.16), 0 12px 24px rgba(12, 43, 65, 0.18);
+}
+
+.input-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.62rem;
+}
+
+.video-options {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.46);
+  padding: 0.68rem 0.78rem;
+  margin-bottom: 0.78rem;
+}
+
+.video-option-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin-bottom: 0.34rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.video-seconds-input {
+  width: 100%;
+  border: 1px solid rgba(60, 95, 126, 0.28);
+  border-radius: 9px;
+  padding: 0.54rem 0.62rem;
+  font-size: 0.85rem;
+  color: var(--ink-900);
+  background: rgba(255, 255, 255, 0.74);
+  outline: none;
+}
+
+.video-seconds-input:focus {
+  border-color: rgba(19, 152, 165, 0.58);
+  box-shadow: 0 0 0 2px rgba(19, 152, 165, 0.14);
+}
+
+.video-option-hint {
+  margin-top: 0.34rem;
+  font-size: 0.71rem;
+  color: var(--ink-500);
+}
 .btn {
   width: 100%;
   border: 0;
@@ -623,6 +674,10 @@ h1 {
 }
 
 @media (max-width: 780px) {
+  .input-actions {
+    grid-template-columns: 1fr;
+  }
+
   .page {
     padding: 2rem 1rem 1.4rem;
   }

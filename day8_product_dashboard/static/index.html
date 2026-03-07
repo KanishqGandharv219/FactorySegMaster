@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=2.4">
+    <link rel="stylesheet" href="/static/style.css?v=2.7">
     <style>
         /* Extra safety for dashboard clicks */
         .tab-btn {
@@ -78,19 +78,36 @@
                         <!-- Image Input -->
                         <div id="image-section" class="input-section">
                             <input type="file" id="img-input" hidden accept="image/*" onchange="previewMedia('image')">
-                            <div class="drop-zone" onclick="document.getElementById('img-input').click()">
-                                <p>Select factory frame or drop here</p>
+                            <div id="img-drop-zone" class="drop-zone" onclick="document.getElementById('img-input').click()">
+                                <p>Select factory frame, drop here, or paste with Ctrl+V</p>
                             </div>
-                            <button class="btn accent" onclick="processImage()">Analyze Still</button>
+                            <div class="input-actions">
+                                <button class="btn" type="button" onclick="pasteImageFromClipboard()">Paste Copied Image</button>
+                                <button class="btn accent" type="button" onclick="processImage()">Analyze Still</button>
+                            </div>
                         </div>
 
                         <!-- Video Input -->
                         <div id="video-section" class="input-section" style="display:none;">
                             <input type="file" id="vid-input" hidden accept="video/*" onchange="previewMedia('video')">
-                            <div class="drop-zone" onclick="document.getElementById('vid-input').click()">
-                                <p>Stream CCTV footage for persistent tracking</p>
+                            <div id="vid-drop-zone" class="drop-zone" onclick="document.getElementById('vid-input').click()">
+                                <p>Stream CCTV footage or drop video for persistent tracking</p>
                             </div>
-                            <button class="btn" onclick="processVideo()">Execute Pipeline</button>
+                            <div class="video-options">
+                                <label class="video-option-label" for="vid-preset">Output Conversion</label>
+                                <select id="vid-preset" class="video-seconds-input">
+                                    <option value="original" selected>Original</option>
+                                    <option value="720p">720p</option>
+                                    <option value="480p">480p</option>
+                                </select>
+                                <div class="video-option-hint">Choose output resolution before processing.</div>
+                            </div>
+                            <div class="video-options">
+                                <label class="video-option-label" for="vid-seconds">Process Duration (seconds)</label>
+                                <input id="vid-seconds" class="video-seconds-input" type="number" min="0" step="1" value="0">
+                                <div class="video-option-hint">Set 0 to process the full uploaded video.</div>
+                            </div>
+                            <button class="btn" type="button" onclick="processVideo()">Execute Pipeline</button>
                         </div>
 
                         <div class="engine-settings">
@@ -134,7 +151,7 @@
                     <div class="log-area">
                         <div class="log-title">Live Event Log</div>
                         <div id="event-log" class="log-content">
-                            <div class="log-line">System Core v2.4 Hardened Initialized.</div>
+                            <div class="log-line">System Core v2.7 Hardened Initialized.</div>
                             <div class="log-line">Awaiting media selection...</div>
                         </div>
                     </div>
@@ -143,7 +160,7 @@
         </div>
 
         <footer class="footer">
-            <div class="footer-left">Enterprise Runtime v2.4 &middot; <code>FastAPI + YOLOv8 + SAM2</code></div>
+            <div class="footer-left">Enterprise Runtime v2.7 &middot; <code>FastAPI + YOLOv8 + SAM2</code></div>
             <div class="footer-right">
                 <span class="status-pill"><span class="status-dot"></span> SYSTEM ONLINE</span>
             </div>
@@ -151,9 +168,7 @@
     </div>
 
     <!-- Script at bottom with cache buster -->
-    <script src="/static/script.js?v=2.4"></script>
+    <script src="/static/script.js?v=2.7"></script>
 </body>
 
 </html>
-
-

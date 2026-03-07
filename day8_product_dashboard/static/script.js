@@ -1,4 +1,4 @@
-﻿console.log("FactoryTwin v2.4: Logic initializing...");
+console.log("FactoryTwin v2.7: Logic initializing...");
 
 let ws = null;
 let wsPingTimer = null;
@@ -102,11 +102,143 @@ function previewMedia(type) {
     }
 }
 
-function buildFormData(file) {
+function setInputFile(input, file) {
+    if (!input || !file || typeof DataTransfer === "undefined") return false;
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    input.files = dataTransfer.files;
+    return true;
+}
+
+function getClipboardImageFromEvent(event) {
+    const items = event?.clipboardData?.items || [];
+    for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+            return item.getAsFile();
+        }
+    }
+    return null;
+}
+
+async function readClipboardImageFile() {
+    if (!navigator.clipboard || !navigator.clipboard.read) {
+        throw new Error("Clipboard read API is not available in this browser context.");
+    }
+
+    const clipboardItems = await navigator.clipboard.read();
+    for (const item of clipboardItems) {
+        const imageType = item.types.find((type) => type.startsWith("image/"));
+        if (imageType) {
+            const blob = await item.getType(imageType);
+            return new File([blob], `clipboard-${Date.now()}.png`, { type: blob.type || imageType });
+        }
+    }
+
+    return null;
+}
+
+function stageClipboardImage(file) {
+    const imageInput = document.getElementById("img-input");
+    if (!imageInput) return false;
+
+    const assigned = setInputFile(imageInput, file);
+    if (!assigned) {
+        log("Clipboard image staging is unavailable in this browser.");
+        return false;
+    }
+
+    previewMedia("image");
+    log("Clipboard image captured and staged.");
+    return true;
+}
+
+async function pasteImageFromClipboard() {
+    try {
+        const file = await readClipboardImageFile();
+        if (!file) {
+            alert("No image found in clipboard. Copy an image first, then paste.");
+            return;
+        }
+
+        const staged = stageClipboardImage(file);
+        if (!staged) {
+            alert("Unable to stage clipboard image in this browser.");
+        }
+    } catch (err) {
+        log(`Clipboard paste unavailable: ${err.message}`);
+        alert("Clipboard access blocked. Use Ctrl+V in the page or drag/drop the image.");
+    }
+}
+
+function bindDropZone(dropZoneId, inputId, type) {
+    const zone = document.getElementById(dropZoneId);
+    const input = document.getElementById(inputId);
+    if (!zone || !input) return;
+
+    const cancel = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+        zone.addEventListener(eventName, (event) => {
+            cancel(event);
+            zone.classList.add("drag-over");
+        });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+        zone.addEventListener(eventName, (event) => {
+            cancel(event);
+            zone.classList.remove("drag-over");
+        });
+    });
+
+    zone.addEventListener("drop", (event) => {
+        const fileList = event.dataTransfer?.files;
+        if (!fileList || fileList.length === 0) return;
+
+        const file = fileList[0];
+        const expected = type === "image" ? "image/" : "video/";
+        if (!file.type.startsWith(expected)) {
+            log(`Rejected ${type} drop: invalid file type ${file.type || "unknown"}.`);
+            return;
+        }
+
+        if (!setInputFile(input, file)) {
+            log("Drag-drop staging failed in this browser.");
+            return;
+        }
+
+        previewMedia(type);
+    });
+}
+
+function getRequestedVideoSeconds() {
+    const el = document.getElementById("vid-seconds");
+    if (!el) return 0;
+
+    const raw = Number.parseFloat(el.value);
+    if (!Number.isFinite(raw) || raw < 0) return 0;
+    return raw;
+}
+
+function getOutputPreset() {
+    const el = document.getElementById("vid-preset");
+    const value = (el?.value || "original").toLowerCase();
+    return ["original", "720p", "480p"].includes(value) ? value : "original";
+}
+function buildFormData(file, mediaType = "image") {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("enable_ppe", document.getElementById("ppe-toggle")?.checked || false);
     formData.append("enable_sam2", document.getElementById("sam2-toggle")?.checked || false);
+
+    if (mediaType === "video") {
+        formData.append("process_seconds", getRequestedVideoSeconds());
+        formData.append("output_preset", getOutputPreset());
+    }
+
     return formData;
 }
 
@@ -126,6 +258,28 @@ async function parseApiResponse(response) {
     }
 
     return data;
+}
+
+async function waitForMediaReady(url, attempts = 12, delayMs = 450) {
+    for (let i = 0; i < attempts; i += 1) {
+        try {
+            const probe = await fetch(`${url}?probe=${Date.now()}_${i}`, {
+                method: "HEAD",
+                cache: "no-store"
+            });
+
+            if (probe.ok) {
+                const contentLength = Number(probe.headers.get("content-length") || "0");
+                if (contentLength > 0) return true;
+            }
+        } catch {
+            // Retry until attempts are exhausted.
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    return false;
 }
 
 function resetProgressUI() {
@@ -151,7 +305,7 @@ async function processImage() {
     try {
         const response = await fetch("/api/process-image", {
             method: "POST",
-            body: buildFormData(file)
+            body: buildFormData(file, "image")
         });
         const data = await parseApiResponse(response);
 
@@ -186,13 +340,15 @@ async function processVideo() {
     const file = document.getElementById("vid-input")?.files[0];
     if (!file) return alert("Please select a video file first.");
 
-    log("Starting background video processing task...");
+    const requestedSeconds = getRequestedVideoSeconds();
+    const outputPreset = getOutputPreset();
+    log(`Starting background video processing task (${requestedSeconds > 0 ? `${requestedSeconds}s` : "full video"}, ${outputPreset})...`);
     resetProgressUI();
 
     try {
         const response = await fetch("/api/process-video", {
             method: "POST",
-            body: buildFormData(file)
+            body: buildFormData(file, "video")
         });
         const data = await parseApiResponse(response);
 
@@ -240,7 +396,7 @@ function startWebSocket(taskId) {
         }, 10000);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
         const data = JSON.parse(event.data);
         if (!data || !data.type) return;
 
@@ -279,11 +435,24 @@ function startWebSocket(taskId) {
             if (outImg) outImg.style.display = "none";
 
             if (outVid) {
+                const ready = await waitForMediaReady(data.processed_url);
+                if (!ready) {
+                    log("Processed video file is delayed; attempting playback anyway.");
+                }
+
+                outVid.onerror = () => {
+                    log("Processed video could not be decoded. Try another source clip or codec.");
+                };
                 outVid.src = `${data.processed_url}?t=${Date.now()}`;
+                outVid.load();
                 outVid.style.display = "block";
                 outVid.play().catch(() => {
                     log("Output video ready. Press play to view.");
                 });
+            }
+
+            if (data.codec || data.resolution) {
+                log(`Output ready (${data.codec || "unknown codec"}, ${data.resolution || "unknown resolution"}).`);
             }
 
             updateUIStats(data.stats);
@@ -316,13 +485,26 @@ function startWebSocket(taskId) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    log("FactoryTwin v2.4 engine ready.");
+    log("FactoryTwin v2.7 engine ready.");
 
     document.getElementById("tab-image")?.addEventListener("click", () => setTab("image"));
     document.getElementById("tab-video")?.addEventListener("click", () => setTab("video"));
 
     document.getElementById("img-input")?.addEventListener("change", () => previewMedia("image"));
     document.getElementById("vid-input")?.addEventListener("change", () => previewMedia("video"));
+
+    bindDropZone("img-drop-zone", "img-input", "image");
+    bindDropZone("vid-drop-zone", "vid-input", "video");
+
+    window.addEventListener("paste", (event) => {
+        if (activeTab !== "image") return;
+
+        const file = getClipboardImageFromEvent(event);
+        if (!file) return;
+
+        event.preventDefault();
+        stageClipboardImage(file);
+    });
 });
 
 (() => {
@@ -345,9 +527,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const mobile = window.matchMedia("(max-width: 920px)").matches;
     const config = {
-        spacing: mobile ? 34 : 26,
+        baseSpacing: mobile ? 32 : 24,
+        minSpacing: mobile ? 26 : 19,
+        maxSpacing: mobile ? 40 : 34,
+        targetDots: mobile ? 740 : 1700,
         jitter: mobile ? 7 : 10,
-        maxDots: mobile ? 560 : 980,
         impactRadius: mobile ? 190 : 270,
         spring: mobile ? 0.022 : 0.017,
         pull: mobile ? 0.085 : 0.11,
@@ -384,14 +568,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function buildDots() {
         dots = [];
-        const spacing = config.spacing;
 
-        for (let y = spacing * 0.5; y < height + spacing; y += spacing) {
-            for (let x = spacing * 0.5; x < width + spacing; x += spacing) {
-                if (dots.length >= config.maxDots) break;
+        const area = Math.max(1, width * height);
+        const adaptiveSpacing = Math.max(
+            config.minSpacing,
+            Math.min(config.maxSpacing, Math.sqrt(area / config.targetDots))
+        );
+        const spacing = Math.max(config.baseSpacing, adaptiveSpacing);
+        const jitter = Math.min(config.jitter, spacing * 0.34);
 
-                const jx = (Math.random() - 0.5) * config.jitter;
-                const jy = (Math.random() - 0.5) * config.jitter;
+        for (let y = spacing * 0.5; y <= height + spacing * 0.5; y += spacing) {
+            for (let x = spacing * 0.5; x <= width + spacing * 0.5; x += spacing) {
+                const jx = (Math.random() - 0.5) * jitter;
+                const jy = (Math.random() - 0.5) * jitter;
                 const baseX = x + jx;
                 const baseY = y + jy;
 
@@ -407,15 +596,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     spin: Math.random() < 0.5 ? -1 : 1
                 });
             }
-
-            if (dots.length >= config.maxDots) break;
         }
     }
 
     function setCanvasSize() {
         dpr = Math.min(window.devicePixelRatio || 1, 1.8);
-        width = window.innerWidth;
-        height = window.innerHeight;
+        width = Math.max(window.innerWidth, document.documentElement.clientWidth || 0);
+        height = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
 
         canvas.width = Math.floor(width * dpr);
         canvas.height = Math.floor(height * dpr);
@@ -455,8 +642,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const fieldRadius = config.impactRadius * (pointer.active ? 1.06 : 0.84);
         const field = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, fieldRadius * 1.2);
-        field.addColorStop(0, "rgba(255, 150, 70, 0.1)");
-        field.addColorStop(0.45, "rgba(86, 168, 181, 0.08)");
+        field.addColorStop(0, "rgba(255, 150, 70, 0.12)");
+        field.addColorStop(0.45, "rgba(86, 168, 181, 0.1)");
         field.addColorStop(1, "rgba(0, 0, 0, 0)");
         ctx.fillStyle = field;
         ctx.fillRect(0, 0, width, height);
@@ -498,7 +685,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const speed = Math.sqrt(dot.vx * dot.vx + dot.vy * dot.vy);
             const tone = 1 - influence;
             const rgb = sampleColor(tone);
-            const alpha = 0.08 + influence * 0.68;
+            const alpha = 0.14 + influence * 0.66;
 
             const stretch = 1 + Math.min(1.2, speed * 2.8 + influence * 0.85);
             const radiusX = dot.size * stretch;
@@ -545,6 +732,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setCanvasSize();
 
     window.addEventListener("resize", setCanvasSize);
+    window.addEventListener("orientationchange", setCanvasSize);
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseleave", handlePointerLeave);
     window.addEventListener("touchstart", handleTouchMove, { passive: true });

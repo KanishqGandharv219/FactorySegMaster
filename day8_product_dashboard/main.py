@@ -1,12 +1,13 @@
-﻿import os
+import os
 import cv2
 import numpy as np
 import shutil
 import asyncio
 import threading
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 import json
 
 # --- ABSOLUTE PATH SETUP ---
@@ -37,9 +38,6 @@ print("-------------------------------")
 
 from factory_twin import FactoryTwin
 
-app = FastAPI(title="FactoryTwin Premium API")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
 print("Initializing FactoryTwin Engine...")
 engine = FactoryTwin()
 print("Engine Ready.")
@@ -53,15 +51,28 @@ def sanitize_filename(filename: str, fallback: str) -> str:
     return cleaned or fallback
 
 
-@app.on_event("startup")
-async def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global main_event_loop
     main_event_loop = asyncio.get_running_loop()
+    yield
+
+
+app = FastAPI(title="FactoryTwin Premium API", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/")
 async def read_index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    favicon_path = os.path.join(STATIC_DIR, "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path)
+    return Response(status_code=204)
 
 
 @app.post("/api/process-image")
@@ -138,9 +149,50 @@ def schedule_progress_notification(task_id: str, data: dict):
     asyncio.run_coroutine_threadsafe(notify_progress(task_id, data), main_event_loop)
 
 
-def process_video_task(input_path, output_path, task_id, enable_ppe, enable_sam2):
+def to_even(value: int) -> int:
+    """Video encoders and browser players are more reliable with even dimensions."""
+    value = max(2, int(value))
+    return value if value % 2 == 0 else value - 1
+
+
+def resolve_output_size(src_width: int, src_height: int, preset: str):
+    preset = (preset or "original").lower()
+    if preset == "original":
+        return to_even(src_width), to_even(src_height)
+
+    if preset == "720p":
+        target_h = 720
+    elif preset == "480p":
+        target_h = 480
+    else:
+        target_h = src_height
+
+    scale = float(target_h) / float(max(1, src_height))
+    target_w = int(round(src_width * scale))
+    return to_even(target_w), to_even(target_h)
+
+
+def open_video_writer(path: str, fps: float, width: int, height: int):
+    """
+    Use mp4v first because some Windows OpenCV builds fail on H.264/OpenH264.
+    Returns (writer, codec_name).
+    """
+    for codec in ("mp4v",):
+        fourcc = cv2.VideoWriter_fourcc(*codec)
+        writer = cv2.VideoWriter(path, fourcc, fps, (width, height))
+        if writer.isOpened():
+            return writer, codec
+        writer.release()
+    return None, None
+
+
+def process_video_task(input_path, output_path, task_id, enable_ppe, enable_sam2, process_seconds, output_preset):
     cap = None
     out = None
+    codec_name = "unknown"
+    out_width = 0
+    out_height = 0
+
     try:
         cap = cv2.VideoCapture(input_path)
         if not cap.isOpened():
@@ -159,42 +211,69 @@ def process_video_task(input_path, output_path, task_id, enable_ppe, enable_sam2
         if total_frames <= 0:
             total_frames = None
 
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-        if not out.isOpened():
-            raise RuntimeError("Could not initialize output video writer.")
+        max_frames = None
+        if process_seconds and process_seconds > 0:
+            max_frames = max(1, int(round(process_seconds * fps)))
+
+        effective_total = total_frames
+        if max_frames is not None:
+            effective_total = min(total_frames, max_frames) if total_frames else max_frames
+
+        out_width, out_height = resolve_output_size(width, height, output_preset)
+        out, codec_name = open_video_writer(output_path, fps, out_width, out_height)
+        if out is None:
+            raise RuntimeError("Could not initialize output video writer with supported codecs.")
 
         engine.tracker.reset()
         engine.analytics.reset()
         frame_count = 0
 
         while cap.isOpened():
+            if max_frames is not None and frame_count >= max_frames:
+                break
+
             ret, frame = cap.read()
             if not ret:
                 break
 
             processed_frame = engine.process_frame(frame, enable_ppe, enable_sam2)
-            out.write(frame if processed_frame is None else processed_frame)
+            output_frame = frame if processed_frame is None else processed_frame
+
+            if output_frame.shape[1] != out_width or output_frame.shape[0] != out_height:
+                output_frame = cv2.resize(output_frame, (out_width, out_height), interpolation=cv2.INTER_AREA)
+
+            out.write(output_frame)
             frame_count += 1
 
-            if frame_count % 5 == 0 or (total_frames and frame_count >= total_frames):
+            if frame_count % 5 == 0 or (effective_total and frame_count >= effective_total):
                 stats = engine.analytics.get_last_stats()
                 logs = engine.analytics.get_log_text()
                 log_lines = [line for line in logs.splitlines() if line.strip()]
                 progress_msg = {
                     "type": "progress",
                     "current": frame_count,
-                    "total": total_frames if total_frames else max(frame_count, 1),
+                    "total": effective_total if effective_total else max(frame_count, 1),
                     "stats": stats,
                     "latest_log": log_lines[-1] if log_lines else ""
                 }
                 schedule_progress_notification(task_id, progress_msg)
 
+        # Finalize encoded file before notifying client so browser can load it.
+        cap.release()
+        cap = None
+        out.release()
+        out = None
+
+        if (not os.path.exists(output_path)) or os.path.getsize(output_path) <= 0:
+            raise RuntimeError("Processed output video was not generated correctly.")
+
         final_msg = {
             "type": "complete",
             "processed_url": f"/static/temp/{os.path.basename(output_path)}",
             "stats": engine.analytics.get_last_stats(),
-            "logs": engine.analytics.get_log_text()
+            "logs": engine.analytics.get_log_text(),
+            "codec": codec_name,
+            "resolution": f"{out_width}x{out_height}"
         }
         schedule_progress_notification(task_id, final_msg)
     except Exception as exc:
@@ -214,11 +293,22 @@ async def api_process_video(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     enable_ppe: bool = Form(True),
-    enable_sam2: bool = Form(False)
+    enable_sam2: bool = Form(False),
+    process_seconds: float = Form(0.0),
+    output_preset: str = Form("original")
 ):
     safe_filename = sanitize_filename(file.filename, "upload.mp4")
     stem, _ = os.path.splitext(safe_filename)
     stem = stem or "upload"
+
+    if process_seconds < 0:
+        return JSONResponse({"status": "error", "message": "process_seconds must be 0 or greater"}, status_code=400)
+
+    if process_seconds > 7200:
+        return JSONResponse({"status": "error", "message": "process_seconds is too large (max 7200 seconds)"}, status_code=400)
+
+    if output_preset not in {"original", "720p", "480p"}:
+        return JSONResponse({"status": "error", "message": "Invalid output_preset"}, status_code=400)
 
     task_id = f"task_{stem}_{np.random.randint(1000, 9999)}"
     input_path = os.path.join(TEMP_DIR, f"raw_{task_id}_{safe_filename}")
@@ -229,7 +319,7 @@ async def api_process_video(
 
     thread = threading.Thread(
         target=process_video_task,
-        args=(input_path, output_path, task_id, enable_ppe, enable_sam2),
+        args=(input_path, output_path, task_id, enable_ppe, enable_sam2, process_seconds, output_preset),
         daemon=True
     )
     thread.start()
@@ -243,5 +333,3 @@ async def api_process_video(
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
-
-
