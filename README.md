@@ -2,7 +2,7 @@
 
 **7-Day Bootcamp - Production Factory Segmentation System - FactoryTwin Foundation - $B China SME Opportunity**
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-Hugging%20Face-blueviolet)](https://kanishqgandharv-factory-product-dashboard.hf.space)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Hugging%20Face-blueviolet)](https://kanishqgandharv-factory-product-dashboard.hf.space)
 [![Gradio](https://img.shields.io/badge/Gradio-Demo-brightgreen)](https://github.com/KanishqGandharv219/FactorySegMaster)
 [![OpenCV](https://img.shields.io/badge/OpenCV-v4.9-blue)](https://opencv.org)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-v0.10-green)](https://mediapipe.dev)
@@ -17,17 +17,17 @@ CCTV Frame -> [FactorySegMaster] -> Segmented Objects -> FactoryTwin Planner
    (CCTV)                 (Result)                    (Assets)              (AI) "Move Worker A to Line 2"
 ```
 
-## 🌐 🚀 LIVE DEPLOYMENT ON HUGGING FACE SPACES
+## LIVE DEPLOYMENT ON HUGGING FACE SPACES
 
-### ⭐ **[CLICK HERE TO TRY THE LIVE DEMO](https://kanishqgandharv-factory-product-dashboard.hf.space)** ⭐
+### **[CLICK HERE TO TRY THE LIVE DEMO](https://kanishqgandharv-factory-product-dashboard.hf.space)**
 
 The **Factory Product Dashboard** is **LIVE NOW** on Hugging Face Spaces with:
-- 📷 Real-time PPE detection (Hardhats & Safety Vests)
-- 👥 Multi-person tracking with persistent worker IDs
-- 🎭 SAM2 zero-shot instance segmentation
-- 📊 Live analytics & factory risk scoring
-- 🎬 Video processing with WebSocket progress streaming
-- 🔧 No installation needed — just visit the link!
+- Real-time PPE detection (Hardhats & Safety Vests)
+- Multi-person tracking with persistent worker IDs
+- SAM2 zero-shot instance segmentation
+- Live analytics & factory risk scoring
+- Video processing with WebSocket progress streaming
+- No installation needed — just visit the link!
 
 **URL:** https://kanishqgandharv-factory-product-dashboard.hf.space
 
